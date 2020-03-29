@@ -12,6 +12,10 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
+#include <linux/init.h>
+#include <linux/kernel_stat.h>
+#include <linux/pagemap.h>
+#include <linux/swap.h>
 
 #define procfs_name "num_pagefaults"
 
@@ -24,16 +28,16 @@ int procfile_read(char *buffer, char **buffer_location, off_t offset, int buffer
 	printk(KERN_INFO "procfile_read (/proc/%s) called\n", procfs_name);
 
 	// calculate total page fault #
-	struct task_struct *tsk;
-	unsigned long num_pagefault;
+	unsigned long total_pagefault_num;
+	unsigned long ev[NR_VM_EVENT_ITEMS];
+	all_vm_events(ev);
 
-	tsk = current;
-	num_pagefault = tsk->maj_flt + tsk->min_flt;
+	total_pagefault_num = ev[PGFAULT];
 
 	if (offset > 0) {
 		ret = 0;
 	} else {
-		ret = sprintf(buffer, "Total number of page faults: %lu\n", num_pagefault);
+		ret = sprintf(buffer, "Total number of page faults: %lu\n", total_pagefault_num);
 	}
 	return ret;
 }
@@ -63,3 +67,5 @@ void cleanup_module()
 	remove_proc_entry(procfs_name, NULL);
 	printk(KERN_INFO "/proc/%s removed\n", procfs_name);
 }
+
+MODULE_LICENSE("GPL");
